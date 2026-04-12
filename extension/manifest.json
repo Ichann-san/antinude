@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "NSFW Content Blocker",
+  "version": "1.0.0",
+  "description": "Ekstensi untuk mendeteksi dan menyensor layar dari konten NSFW secara real-time.",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ],
+  "action": {
+    "default_title": "NSFW Filter Active"
+  }
+}
