@@ -1,7 +1,7 @@
 fastapi
 uvicorn
 pydantic
-Pillow
-numpy
 gunicorn
+Pillow==10.3.0
+numpy==1.26.4
 # tensorflow==2.15.0  # Uncomment ini nanti kalau sudah pakai model ML
