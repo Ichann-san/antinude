@@ -30,7 +30,7 @@ def predict_image(image: Image.Image) -> str:
         img_array = np.expand_dims(img_array, axis=0)
 
         # Logika model nanti taruh sini
-        return "safe" 
+        return "nsfw" 
         
     except Exception as e:
         print(f"Error prediksi: {e}")
