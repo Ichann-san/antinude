@@ -3,4 +3,5 @@ uvicorn
 pydantic
 Pillow
 numpy
+gunicorn
 # tensorflow==2.15.0  # Uncomment ini nanti kalau sudah pakai model ML
