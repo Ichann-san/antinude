@@ -1,5 +1,5 @@
 // Ganti URL ini nanti dengan URL Ngrok dari Google Colab-mu
-const API_ENDPOINT = "https://antinsfw-agf0habfesauhgah.southeastasia-01.azurewebsites.net/";
+const API_ENDPOINT = "https://antinsfw-agf0habfesauhgah.southeastasia-01.azurewebsites.net/predict";
 
 // Interval polling (dalam milidetik). 2000ms = 2 detik.
 const POLLING_INTERVAL = 2000;
