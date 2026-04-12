@@ -1,5 +1,5 @@
 // Ganti URL ini nanti dengan URL Ngrok dari Google Colab-mu
-const API_ENDPOINT = "https://swivel-egging-slightly.ngrok-free.dev/predict";
+const API_ENDPOINT = "https://antinsfw-agf0habfesauhgah.southeastasia-01.azurewebsites.net/";
 
 // Interval polling (dalam milidetik). 2000ms = 2 detik.
 const POLLING_INTERVAL = 2000;
