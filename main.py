@@ -9,6 +9,10 @@ import numpy as np
 
 app = FastAPI(title="Strokeguard NSFW Backend - Azure")
 
+@app.get("/")
+async def root():
+    return {"message": "API Strokeguard NSFW is Running!"}
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], 
