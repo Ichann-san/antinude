@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+pydantic
+Pillow
+numpy
+# tensorflow==2.15.0  # Uncomment ini nanti kalau sudah pakai model ML
