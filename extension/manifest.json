@@ -5,8 +5,7 @@
   "description": "Real-time NSFW content detection and screen censorship powered by machine learning.",
   "permissions": [
     "activeTab",
-    "scripting",
-    "alarms"
+    "scripting"
   ],
   "host_permissions": [
     "<all_urls>"

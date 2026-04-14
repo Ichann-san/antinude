@@ -22,8 +22,8 @@ Real-time NSFW content detection Chrome extension powered by a ResNet50 machine 
 
 ### End-to-End Flow
 
-1. **Extension installs** → `background.js` registers a `chrome.alarms` timer (~6s interval)
-2. **On each alarm tick** → captures a JPEG screenshot of the active tab
+1. **Extension installs** → `background.js` starts a `setInterval` loop (300ms interval)
+2. **On each tick** → captures a JPEG screenshot of the active tab
 3. **Sends base64-encoded image** → `POST /predict` with `X-API-Key` header
 4. **Backend receives request** → validates API key → checks rate limit → validates payload size
 5. **Image preprocessing** → decode base64 → downscale if too large → resize to 224×224 → ImageNet normalization
@@ -176,7 +176,7 @@ GitHub Actions workflow (`.github/workflows/main_antinsfw.yml`):
 
 ## Rate Limits & Performance
 
-- **Scan interval:** ~6 seconds (Chrome alarms minimum)
+- **Scan interval:** 300ms (via `setInterval`)
 - **Rate limit:** 120 requests/min per IP
 - **Error backoff:** After 5 consecutive failures, pauses for 30 seconds
 - **Image quality:** JPEG @ 50% quality (reduces payload size)

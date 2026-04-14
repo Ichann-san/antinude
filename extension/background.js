@@ -1,12 +1,12 @@
 // --- Config ---
 const API_ENDPOINT = "https://antinsfw-agf0habfesauhgah.southeastasia-01.azurewebsites.net/predict";
 const API_KEY = "";  // Set your API key here (must match ANTINUDE_API_KEY on server)
-const ALARM_NAME = "nsfw-scan";
-const SCAN_INTERVAL_MINUTES = 0.1;  // ~6 seconds (minimum chrome.alarms supports)
+const SCAN_INTERVAL_MS = 300;
 const JPEG_QUALITY = 50;
 const MAX_CONSECUTIVE_ERRORS = 5;
 
 let errorCount = 0;
+let scanInterval = null;
 
 // --- Capture and Analyze ---
 async function captureAndAnalyze() {
@@ -14,7 +14,7 @@ async function captureAndAnalyze() {
         const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
         // Skip internal Chrome pages
-        if (!activeTab || activeTab.url.startsWith("chrome://")) return;
+        if (!activeTab || !activeTab.url || activeTab.url.startsWith("chrome://")) return;
 
         // Capture visible tab as JPEG
         const dataUrl = await chrome.tabs.captureVisibleTab(
@@ -62,28 +62,33 @@ async function captureAndAnalyze() {
         // Back off if too many consecutive errors
         if (errorCount >= MAX_CONSECUTIVE_ERRORS) {
             console.warn("[Antinude] Too many errors, pausing for 30s...");
-            chrome.alarms.clear(ALARM_NAME);
+            stopScanning();
             setTimeout(() => {
                 errorCount = 0;
-                chrome.alarms.create(ALARM_NAME, { periodInMinutes: SCAN_INTERVAL_MINUTES });
+                startScanning();
             }, 30000);
         }
     }
 }
 
-// --- Alarm-based scheduling (proper MV3 pattern) ---
-chrome.alarms.onAlarm.addListener((alarm) => {
-    if (alarm.name === ALARM_NAME) {
-        captureAndAnalyze();
+// --- Interval-based scanning ---
+function startScanning() {
+    if (scanInterval) return;
+    scanInterval = setInterval(captureAndAnalyze, SCAN_INTERVAL_MS);
+}
+
+function stopScanning() {
+    if (scanInterval) {
+        clearInterval(scanInterval);
+        scanInterval = null;
     }
-});
+}
 
 chrome.runtime.onInstalled.addListener(() => {
     console.log("[Antinude] Service worker started.");
-    chrome.alarms.create(ALARM_NAME, { periodInMinutes: SCAN_INTERVAL_MINUTES });
+    startScanning();
 });
 
-// Also start on browser startup
 chrome.runtime.onStartup.addListener(() => {
-    chrome.alarms.create(ALARM_NAME, { periodInMinutes: SCAN_INTERVAL_MINUTES });
+    startScanning();
 });
