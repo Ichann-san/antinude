@@ -43,7 +43,16 @@ async function captureAndAnalyze() {
 
         if (result.status === "nsfw") {
             console.warn("[Antinude] NSFW detected — sending blur signal");
-            chrome.tabs.sendMessage(activeTab.id, { action: "EXECUTE_BLUR" });
+            try {
+                await chrome.tabs.sendMessage(activeTab.id, { action: "EXECUTE_BLUR" });
+            } catch {
+                // Content script not injected yet (tab was open before extension loaded)
+                await chrome.scripting.executeScript({
+                    target: { tabId: activeTab.id },
+                    files: ["content.js"],
+                });
+                await chrome.tabs.sendMessage(activeTab.id, { action: "EXECUTE_BLUR" });
+            }
         }
 
     } catch (error) {
