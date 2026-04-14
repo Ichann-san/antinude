@@ -5,13 +5,13 @@ import base64
 from io import BytesIO
 from PIL import Image
 import numpy as np
-# import tensorflow as tf  # Uncomment jika pakai Keras/TF nanti
+import onnxruntime as ort
 
-app = FastAPI(title="Strokeguard NSFW Backend - Azure")
+app = FastAPI(title="Antinude Backend - Azure")
 
 @app.get("/")
 async def root():
-    return {"message": "API Strokeguard NSFW is Running!"}
+    return {"message": "API Antinude is Running (Powered by ONNX)!"}
 
 app.add_middleware(
     CORSMiddleware,
@@ -24,33 +24,55 @@ app.add_middleware(
 class ImagePayload(BaseModel):
     image_base64: str
 
-# Placeholder model
-# model = tf.keras.models.load_model('model.h5')
+# --- INITIALIZE ONNX MODEL ONCE AT STARTUP ---
+# Load model ke RAM saat server baru nyala biar prediksi selanjutnya ngebut
+try:
+    print("Loading ONNX Model...")
+    # onnxruntime otomatis akan membaca file .data jika ada di folder yang sama
+    ort_session = ort.InferenceSession("student_model.onnx", providers=["CPUExecutionProvider"])
+    input_name = ort_session.get_inputs()[0].name
+    print("Model Loaded Successfully!")
+except Exception as e:
+    print(f"Gagal memuat model: {e}")
+# ---------------------------------------------
 
-def predict_image(image: Image.Image) -> str:
-    try:
-        img_resized = image.resize((224, 224))
-        img_array = np.array(img_resized) / 255.0
-        img_array = np.expand_dims(img_array, axis=0)
-
-        # Logika model nanti taruh sini
-        return "nsfw" 
-        
-    except Exception as e:
-        print(f"Error prediksi: {e}")
-        return "safe"
+def preprocess_image(image: Image.Image) -> np.ndarray:
+    # 1. Resize ke 224x224 (Standar ResNet50)
+    img = image.resize((224, 224))
+    img_np = np.array(img, dtype=np.float32) / 255.0
+    
+    # 2. Normalisasi standar ImageNet
+    mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+    std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+    img_np = (img_np - mean) / std
+    
+    # 3. Ubah format dari (Height, Width, Channel) ke (Channel, Height, Width) ala PyTorch
+    img_np = np.transpose(img_np, (2, 0, 1))
+    
+    # 4. Tambahkan dimensi batch di depan -> (1, 3, 224, 224)
+    img_np = np.expand_dims(img_np, axis=0)
+    return img_np
 
 @app.post("/predict")
 async def process_screenshot(payload: ImagePayload):
     try:
+        # Decode gambar
         image_bytes = base64.b64decode(payload.image_base64)
         image = Image.open(BytesIO(image_bytes)).convert("RGB")
         
-        status = predict_image(image)
-        return {"status": status}
+        # Preprocess
+        input_data = preprocess_image(image)
+        
+        # Inference pakai ONNX
+        outputs = ort_session.run(None, {input_name: input_data})
+        
+        # Ekstrak probabilitas (Sigmoid output)
+        score = float(outputs[0][0][0])
+        
+        # Tentukan status (Threshold 0.5)
+        status = "nsfw" if score > 0.5 else "safe"
+        
+        return {"status": status, "confidence": score}
         
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Gagal memproses gambar: {str(e)}")
-
-# Perhatikan: Tidak ada blok uvicorn.run() atau Ngrok di bawah sini.
-# Azure akan menjalankan server ini menggunakan Gunicorn secara otomatis.
