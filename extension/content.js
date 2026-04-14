@@ -1,31 +1,37 @@
 let isOverlayActive = false;
 let tamperObserver = null;
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+// Listen for blur commands from background script
+chrome.runtime.onMessage.addListener((request) => {
     if (request.action === "EXECUTE_BLUR") {
         applyCensorship();
     }
 });
 
+/**
+ * Creates a fullscreen blur overlay with a warning popup.
+ * Prevents duplicate overlays if one already exists.
+ */
 function applyCensorship() {
     if (document.getElementById("nsfw-blur-overlay")) return;
 
     isOverlayActive = true;
 
-    // 1. Overlay Background Blur
+    // Fullscreen backdrop blur overlay
     const overlay = document.createElement("div");
     overlay.id = "nsfw-blur-overlay";
     Object.assign(overlay.style, {
-        position: "fixed", top: "0", left: "0", width: "100vw", height: "100vh",
+        position: "fixed", top: "0", left: "0",
+        width: "100vw", height: "100vh",
         backgroundColor: "rgba(0, 0, 0, 0.6)",
         backdropFilter: "blur(20px)",
         zIndex: "2147483647",
         display: "flex", justifyContent: "center", alignItems: "center",
         fontFamily: "Arial, sans-serif",
-        pointerEvents: "all"
+        pointerEvents: "all",
     });
 
-    // 2. Kotak Popup Minimalis & Formal
+    // Warning popup box
     const popupBox = document.createElement("div");
     Object.assign(popupBox.style, {
         backgroundColor: "#ffffff",
@@ -35,58 +41,64 @@ function applyCensorship() {
         textAlign: "center",
         color: "#333",
         position: "relative",
-        maxWidth: "400px"
+        maxWidth: "400px",
     });
 
-    // 3. Tombol Close (X)
+    // Close button
     const closeBtn = document.createElement("button");
-    closeBtn.innerText = "✕";
+    closeBtn.innerText = "\u2715";
     Object.assign(closeBtn.style, {
         position: "absolute", top: "12px", right: "15px",
         background: "none", border: "none",
         fontSize: "20px", cursor: "pointer", color: "#888",
-        padding: "0"
+        padding: "0",
     });
-    closeBtn.onmouseover = () => closeBtn.style.color = "#333";
-    closeBtn.onmouseout = () => closeBtn.style.color = "#888";
-    
-    // Logika ketika tombol X ditekan secara mandiri oleh user
+    closeBtn.onmouseover = () => (closeBtn.style.color = "#333");
+    closeBtn.onmouseout = () => (closeBtn.style.color = "#888");
     closeBtn.onclick = () => {
-        isOverlayActive = false; // Matikan status aktif agar observer tidak marah
+        isOverlayActive = false;
         overlay.remove();
     };
 
-    // 4. Teks Konten
+    // Title
     const title = document.createElement("h2");
-    title.innerText = "Akses Dibatasi";
-    Object.assign(title.style, { margin: "0 0 10px 0", fontSize: "1.5rem", color: "#d9534f" });
+    title.innerText = "Access Restricted";
+    Object.assign(title.style, {
+        margin: "0 0 10px 0", fontSize: "1.5rem", color: "#d9534f",
+    });
 
+    // Description
     const desc = document.createElement("p");
-    desc.innerText = "Sistem mendeteksi adanya indikasi konten tidak pantas pada tampilan layar Anda saat ini.";
-    Object.assign(desc.style, { margin: "0", fontSize: "1rem", color: "#555", lineHeight: "1.5" });
+    desc.innerText = "Potentially inappropriate content has been detected on this page. The screen has been blurred for your safety.";
+    Object.assign(desc.style, {
+        margin: "0", fontSize: "1rem", color: "#555", lineHeight: "1.5",
+    });
 
-    // Rangkai elemen
+    // Assemble elements
     popupBox.appendChild(closeBtn);
     popupBox.appendChild(title);
     popupBox.appendChild(desc);
     overlay.appendChild(popupBox);
     document.body.appendChild(overlay);
 
-    // 5. Anti-Tampering Mechanism
+    // Protect overlay from tampering via DevTools
     setupAntiTampering();
 }
 
+/**
+ * Watches for DOM mutations that try to remove or hide the overlay.
+ * Re-applies censorship if the overlay is removed while still active.
+ */
 function setupAntiTampering() {
     if (tamperObserver) return;
 
     tamperObserver = new MutationObserver((mutations) => {
-        if (!isOverlayActive) return; // Kalau user klik tombol X, biarkan saja
+        if (!isOverlayActive) return;
 
         mutations.forEach((mutation) => {
-            // Cek jika user menghapus elemen dari DOM
+            // Re-apply if overlay was removed from DOM
             mutation.removedNodes.forEach((node) => {
-                if (node.id === "nsfw-blur-overlay" || node.contains(document.getElementById("nsfw-blur-overlay"))) {
-                    // Reset dan Respawn!
+                if (node.id === "nsfw-blur-overlay") {
                     tamperObserver.disconnect();
                     tamperObserver = null;
                     isOverlayActive = false;
@@ -94,7 +106,7 @@ function setupAntiTampering() {
                 }
             });
 
-            // Cek jika user ngakalin CSS (contoh: diubah jadi display: none atau opacity: 0)
+            // Restore visibility if CSS was tampered with
             if (mutation.type === "attributes" && mutation.target.id === "nsfw-blur-overlay") {
                 const style = mutation.target.style;
                 if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") {
@@ -106,5 +118,10 @@ function setupAntiTampering() {
         });
     });
 
-    tamperObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
+    tamperObserver.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ["style"],
+    });
 }
