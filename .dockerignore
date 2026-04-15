@@ -1,0 +1,14 @@
+.git/
+.github/
+extension/
+extension.pem
+extension.crx
+antinude.ipynb
+__pycache__/
+*.pyc
+venv/
+antenv/
+.env
+README.md
+DOCKER_VPS_GUIDE.md
+.gitignore
