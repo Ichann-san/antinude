@@ -1,15 +1,20 @@
 // --- Config ---
 const API_ENDPOINT = "https://antinsfw-agf0habfesauhgah.southeastasia-01.azurewebsites.net/predict";
 const API_KEY = "";  // Set your API key here (must match ANTINUDE_API_KEY on server)
-const SCAN_INTERVAL_MS = 300;
+const SCAN_INTERVAL_MS = 1000;  // Chrome allows max 2 captureVisibleTab/sec — 1s is safe
 const JPEG_QUALITY = 50;
 const MAX_CONSECUTIVE_ERRORS = 5;
 
 let errorCount = 0;
 let scanInterval = null;
+let isProcessing = false;  // Mutex: prevent overlapping captures
 
 // --- Capture and Analyze ---
 async function captureAndAnalyze() {
+    // Skip if previous capture still processing
+    if (isProcessing) return;
+    isProcessing = true;
+
     try {
         const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
@@ -17,10 +22,17 @@ async function captureAndAnalyze() {
         if (!activeTab || !activeTab.url || activeTab.url.startsWith("chrome://")) return;
 
         // Capture visible tab as JPEG
-        const dataUrl = await chrome.tabs.captureVisibleTab(
-            activeTab.windowId,
-            { format: "jpeg", quality: JPEG_QUALITY }
-        );
+        let dataUrl;
+        try {
+            dataUrl = await chrome.tabs.captureVisibleTab(
+                activeTab.windowId,
+                { format: "jpeg", quality: JPEG_QUALITY }
+            );
+        } catch (captureErr) {
+            // Tab being dragged, devtools focused, or other transient state — skip silently
+            return;
+        }
+
         const base64Image = dataUrl.split(",")[1];
 
         // Build request headers
@@ -68,6 +80,8 @@ async function captureAndAnalyze() {
                 startScanning();
             }, 30000);
         }
+    } finally {
+        isProcessing = false;
     }
 }
 
