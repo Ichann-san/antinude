@@ -55,8 +55,8 @@ from collections import defaultdict
 import time
 
 rate_limit_store: dict[str, list[float]] = defaultdict(list)
-RATE_LIMIT_WINDOW = 60  # seconds
-RATE_LIMIT_MAX = 120     # max requests per window
+RATE_LIMIT_WINDOW = 60
+RATE_LIMIT_MAX = 120
 
 
 async def check_rate_limit(request: Request):
@@ -146,16 +146,13 @@ async def predict(payload: ImagePayload):
         image_bytes = base64.b64decode(payload.image_base64)
         image = Image.open(BytesIO(image_bytes)).convert("RGB")
 
-        # Downscale large images before preprocessing to save memory
         max_dim = 1024
         if max(image.size) > max_dim:
             image.thumbnail((max_dim, max_dim), Image.LANCZOS)
 
-        # Preprocess and run inference
         input_data = preprocess_image(image)
         outputs = ort_session.run(None, {input_name: input_data})
 
-        # Sigmoid output -> probability
         score = float(outputs[0][0][0])
         status = "nsfw" if score > NSFW_THRESHOLD else "safe"
 
