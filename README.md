@@ -4,7 +4,7 @@ A real-time NSFW content detection system powered by a custom Machine Learning M
 
 ---
 
-## 🌐 Architecture & Networking
+## Architecture & Networking
 
 The system consists of three main networking layers: the Chrome extension frontend, the NGINX reverse-proxy, and the Dockerized FastAPI model server.
 
@@ -28,7 +28,7 @@ The system consists of three main networking layers: the Chrome extension fronte
 
 ---
 
-## 🧠 Machine Learning Pipeline
+## Machine Learning Pipeline
 
 The detection engine uses a robust **Teacher-Student Knowledge Distillation** architecture outlined in `fpfinal.ipynb`.
 
@@ -68,7 +68,7 @@ Classify an image as safe or nsfw.
 
 ---
 
-## 🚀 Setup & Deployment (VPS & Docker)
+## Setup & Deployment (VPS & Docker)
 
 We deploy the system onto a Linux VPS using Docker and NGINX for a production-ready environment.
 
@@ -106,7 +106,7 @@ sudo systemctl restart nginx
 
 ---
 
-## 🔒 Security & Performance Features
+## Security & Performance Features
 
 - **Protection**: Employs an `X-API-Key` block system preventing unauthorized access to the GPU/CPU inference engine.
 - **Rate Limit**: Software limits at 120 reqs/min per IP to prevent DDoS. Payload size is capped at 5MB limit.
